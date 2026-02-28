@@ -44,6 +44,7 @@
     {"id":{"name":"enemy_lanes","path":"scripts/enemy_lanes/enemy_lanes.yy",},},
     {"id":{"name":"find_clear_spawn_position","path":"scripts/find_clear_spawn_position/find_clear_spawn_position.yy",},},
     {"id":{"name":"get_wave_pattern","path":"scripts/get_wave_pattern/get_wave_pattern.yy",},},
+    {"id":{"name":"get_spawn_intent","path":"scripts/get_spawn_intent/get_spawn_intent.yy",},},
     {"id":{"name":"good_lane","path":"scripts/good_lane/good_lane.yy",},},
     {"id":{"name":"lane_bounds","path":"scripts/lane_bounds/lane_bounds.yy",},},
     {"id":{"name":"lane_center","path":"scripts/lane_center/lane_center.yy",},},
