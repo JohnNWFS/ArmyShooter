@@ -24,6 +24,7 @@
     {"name":"enemy_lanes","order":2,"path":"scripts/enemy_lanes/enemy_lanes.yy",},
     {"name":"find_clear_spawn_position","order":9,"path":"scripts/find_clear_spawn_position/find_clear_spawn_position.yy",},
     {"name":"get_wave_pattern","order":10,"path":"scripts/get_wave_pattern/get_wave_pattern.yy",},
+    {"name":"get_spawn_intent","order":13,"path":"scripts/get_spawn_intent/get_spawn_intent.yy",},
     {"name":"good_lane","order":3,"path":"scripts/good_lane/good_lane.yy",},
     {"name":"lane_bounds","order":1,"path":"scripts/lane_bounds/lane_bounds.yy",},
     {"name":"log_death_event","order":12,"path":"scripts/log_death_event/log_death_event.yy",},

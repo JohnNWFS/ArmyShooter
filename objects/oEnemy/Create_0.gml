@@ -10,6 +10,7 @@ max_hp = 2;
 flash = 0;
 move_timer = 0;
 birth_time = global.game_timer;
+role = "line";
 
 // Set sprite based on enemy type
 if (is_boss) {
