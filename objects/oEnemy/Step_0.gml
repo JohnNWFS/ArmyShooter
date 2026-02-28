@@ -1,10 +1,20 @@
 /// oEnemy - Step Event
 
-// Swarm enemies move faster
-if (is_swarm) {
-    y += 3;  // Swarms move at 3 pixels/frame
-} else {
-    y += SCROLL_SPEED;  // Regular/boss/mini-boss move at 2 pixels/frame
+// Role-aware movement
+var move_speed = is_swarm ? 3 : SCROLL_SPEED;
+if (role == "rush") move_speed += 1;
+if (role == "pin") move_speed = max(1, move_speed - 0.5);
+if (role == "escort" && is_swarm) move_speed = 2.5;
+y += move_speed;
+
+// Flankers drift side-to-side inside the lane
+if (role == "flank") {
+    move_timer += 0.08;
+    var drift = sin(move_timer) * 1.3;
+    x += drift;
+
+    var flank_bounds = lane_bounds(lane);
+    x = clamp(x, flank_bounds[0], flank_bounds[1] - size);
 }
 
 // Boss/Mini-boss sine wave movement
