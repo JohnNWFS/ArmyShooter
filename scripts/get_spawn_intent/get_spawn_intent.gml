@@ -1,7 +1,6 @@
-/// get_spawn_intent() -> struct
+/// get_spawn_intent(pattern) -> struct
 /// Returns lane + reason data for the next spawn based on lightweight director scoring.
-function get_spawn_intent() {
-    var _pattern = oLevelManager.current_wave_pattern;
+function get_spawn_intent(_pattern) {
     var lanes = enemy_lanes();
     var best_lane = lanes[0];
     var best_score = -999999;
@@ -10,11 +9,11 @@ function get_spawn_intent() {
     var low_army = instance_number(oSoldier) < 12;
 
     for (var i = 0; i < array_length(lanes); i++) {
-        var lane_id = lanes[i];
+        var ln = lanes[i];
         var score = 100;
 
         // Cooldown memory: avoid repeatedly stacking the exact same lane.
-        var cooldown = oLevelManager.lane_spawn_cooldown[lane_id];
+        var cooldown = oLevelManager.lane_spawn_cooldown[ln];
         score -= cooldown * 22;
 
         // Pressure equalizer: prefer lane with fewer active enemies / less progress.
@@ -24,7 +23,7 @@ function get_spawn_intent() {
 
         for (var e = 0; e < enemy_count; e++) {
             var inst = instance_find(oEnemy, e);
-            if (inst.lane == lane_id) {
+            if (inst.lane == ln) {
                 lane_enemy_count++;
                 furthest_y = max(furthest_y, inst.y);
             }
@@ -35,7 +34,7 @@ function get_spawn_intent() {
 
         // Keep swarms threatening by slightly preferring the opposite lane.
         if (_pattern.is_swarm) {
-            score += (lane_id != oLevelManager.last_spawn_lane) ? 15 : -8;
+            score += (ln != oLevelManager.last_spawn_lane) ? 15 : -8;
         }
 
         // Recovery behavior: when army is low, avoid piling pressure on the lane
@@ -49,7 +48,7 @@ function get_spawn_intent() {
 
         if (score > best_score) {
             best_score = score;
-            best_lane = lane_id;
+            best_lane = ln;
             reason = "cooldown_and_pressure";
         }
     }

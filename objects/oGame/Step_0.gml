@@ -85,7 +85,7 @@ if (oLevelManager.state == 1) { // SPAWNING_WAVES
             oLevelManager.spawn_timer = 0;
 
             // Determine enemy lane using director intent
-            var spawn_intent = get_spawn_intent();
+            var spawn_intent = get_spawn_intent(pattern);
             var lane = spawn_intent.lane;
             oLevelManager.last_spawn_lane = lane;
             oLevelManager.lane_spawn_cooldown[lane] = 5;
@@ -514,7 +514,7 @@ if (oLevelManager.state == 1) {
         if (swarm_background_timer >= 180) {
             swarm_background_timer = 0;
 
-            var ambient_intent = get_spawn_intent();
+            var ambient_intent = get_spawn_intent(current_pattern);
             var lane = ambient_intent.lane;
             var swarm_count = irandom_range(3, 4);
             var spacing = 25;
