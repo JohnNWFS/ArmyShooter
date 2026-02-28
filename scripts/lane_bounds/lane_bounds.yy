@@ -1,0 +1,13 @@
+{
+  "$GMScript":"v1",
+  "%Name":"lane_bounds",
+  "isCompatibility":false,
+  "isDnD":false,
+  "name":"lane_bounds",
+  "parent":{
+    "name":"Scripts",
+    "path":"folders/Scripts.yy",
+  },
+  "resourceType":"GMScript",
+  "resourceVersion":"2.0",
+}

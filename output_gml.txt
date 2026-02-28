@@ -1,0 +1,1419 @@
+/// @file objects/oBullet/Create_0.gml
+
+/// oBullet - Create Event
+
+// Set damage based on power-up
+damage = global.double_damage_active ? 2 : 1;
+
+// Trail for visual effect
+trail = ds_queue_create();
+repeat(5) ds_queue_enqueue(trail, [x, y]);
+
+================================================================================
+
+/// @file objects/oBullet/Draw_0.gml
+
+var i = 0;
+var sz = ds_queue_size(trail);
+var temp = ds_queue_create();
+repeat(sz) {
+    var p = ds_queue_dequeue(trail);
+    ds_queue_enqueue(trail, p);
+    ds_queue_enqueue(temp, p);
+    
+    var a = 100 * (i + 1) / sz;
+    var s = 6 * (i + 1) / sz;
+    draw_set_alpha(a / 255);
+    var col = damage > 1 ? make_color_rgb(255,100,255) : make_color_rgb(255,255,100);
+    draw_circle_color(p[0], p[1], s, col, col, false);
+    i++;
+}
+ds_queue_destroy(temp);
+draw_set_alpha(1);
+
+var col = damage > 1 ? make_color_rgb(255,100,255) : BULLET_COLOR;
+draw_rectangle_color(x, y, x+8, y+16, col, col, col, col, false);
+draw_rectangle_color(x, y, x+8, y+16, c_white, c_white, c_white, c_white, true);
+
+================================================================================
+
+/// @file objects/oBullet/Step_0.gml
+
+/// oBullet - Step Event (MANUAL COLLISION - FIXED)
+
+// Update trail
+ds_queue_enqueue(trail, [x, y]);
+if (ds_queue_size(trail) > 5) ds_queue_dequeue(trail);
+
+// Move bullet upward
+y -= BULLET_SPEED;
+
+// Bullet rectangle
+var bullet_left = x;
+var bullet_right = x + 8;
+var bullet_top = y;
+var bullet_bottom = y + 16;
+var bullet_damage = damage;  // Store for use in with statements
+
+// Check collision with NUMBER BLOCKS
+with (oNumberBlock) {
+    var block_left = x;
+    var block_right = x + BLOCK_SIZE;
+    var block_top = y;
+    var block_bottom = y + BLOCK_SIZE;
+    
+    // Rectangle overlap check
+    if (bullet_right > block_left && bullet_left < block_right &&
+        bullet_bottom > block_top && bullet_top < block_bottom) {
+        
+       // show_debug_message("BULLET HIT BLOCK!");
+        value += bullet_damage;
+        spawn_particles(x + BLOCK_SIZE/2, y + BLOCK_SIZE/2,
+            value > 0 ? POS_BLOCK_COLOR : CONVERTING_COLOR, 8);
+        
+        // Update score - find oGame instance
+        with (oGame) {
+            score += bullet_damage;
+        }
+        
+        ds_queue_destroy(other.trail);
+        instance_destroy(other);
+        exit;
+    }
+}
+
+// Check collision with ENEMIES
+with (oEnemy) {
+    var enemy_left = x;
+    var enemy_right = x + size;
+    var enemy_top = y;
+    var enemy_bottom = y + size;
+    
+    // Rectangle overlap check
+    if (bullet_right > enemy_left && bullet_left < enemy_right &&
+        bullet_bottom > enemy_top && bullet_top < enemy_bottom) {
+        
+        show_debug_message("BULLET HIT ENEMY! Enemy HP: " + string(hp) + " Damage: " + string(bullet_damage));
+        
+        hp -= bullet_damage;
+        flash = 6;
+        
+        if (hp <= 0) {
+            show_debug_message("ENEMY DESTROYED!");
+            var pts = is_boss ? 100 : (is_mini_boss ? 50 : 5);
+            
+            // Update score
+            with (oGame) {
+                score += pts;
+            }
+            
+            var col = is_boss ? BOSS_COLOR : (is_mini_boss ? make_color_rgb(180,50,50) : ENEMY_COLOR);
+            var cnt = is_boss ? 35 : (is_mini_boss ? 25 : 15);
+            
+            spawn_particles(x + size/2, y + size/2, col, cnt);
+            
+            global.combo++;
+            global.combo_timer = 120;
+            
+            if (is_boss) boss_defeated();
+            instance_destroy(id);
+        }
+        
+        ds_queue_destroy(other.trail);
+        instance_destroy(other);
+        exit;
+    }
+}
+
+// Destroy if off screen
+if (y < -50) {
+    ds_queue_destroy(trail);
+    instance_destroy();
+}
+
+================================================================================
+
+/// @file objects/oConfig/Create_0.gml
+
+/// oConfig - Create Event - EARLY INITIALIZATION (BALANCED START)
+/// This runs BEFORE other objects and sets up globals immediately
+
+// Initialize globals FIRST before anything else
+global.view_w = 768;
+global.view_h = 1024;
+global.scale = 1.0;
+global.offset_x = 0;
+global.offset_y = 0;
+
+// Define macros with the initial values
+#macro DESIGN_W 768
+#macro DESIGN_H 1024
+
+// Dynamic macros – these will update after we calculate actual scaling
+#macro WIDTH  global.view_w
+#macro HEIGHT global.view_h
+
+// Gameplay constants (BALANCED FOR EASIER START)
+#macro FPS                    60
+#macro SCROLL_SPEED           2              // WAS 4 - slower enemy descent
+#macro BULLET_SPEED           16
+#macro FIRE_RATE              12
+#macro BASE_SOLDIER_SIZE      24
+#macro FORMATION_SPACING      30
+#macro Instances_PER_ROW       5
+#macro PLAYER_Y               (HEIGHT - 200)
+#macro MAX_Instances           20
+#macro LANE_WIDTH             (WIDTH / 3)
+#macro GOOD_LANE              1
+#macro BLOCK_SIZE             60
+#macro BLOCK_SPAWN_RATE       120            // WAS 70 - spawn Instances less often
+#macro BLOCK_SPEED            2              // WAS 3 - slower block descent
+#macro SPAWN_THRESHOLD        3
+#macro BASE_ENEMY_SPAWN_RATE  90             // WAS 25 - spawn Instances much less often
+#macro MIN_ENEMY_SPAWN_RATE   60             // WAS 15 - minimum spawn rate slower
+#macro Instances_PER_SPAWN      1              // WAS 2 - only spawn 1 enemy at a time
+#macro CONTROL_BAR_HEIGHT     120
+#macro MOVEMENT_SPEED         12
+#macro GAME_OVER_LINE         (HEIGHT - 130)
+
+#macro BG_COLOR       make_color_rgb(20,20,40)
+#macro SOLDIER_COLOR  make_color_rgb(0,100,255)
+#macro BULLET_COLOR   make_color_rgb(255,255,0)
+#macro ENEMY_COLOR    make_color_rgb(200,0,0)
+#macro BOSS_COLOR     make_color_rgb(150,0,100)
+#macro POS_BLOCK_COLOR make_color_rgb(0,200,0)
+#macro NEG_BLOCK_COLOR make_color_rgb(255,150,0)
+#macro CONVERTING_COLOR make_color_rgb(255,255,0)
+
+
+// Power-up globals
+global.rapid_fire_active    = false;
+global.rapid_fire_timer     = 0;
+global.double_damage_active = false;
+global.double_damage_timer  = 0;
+global.combo                = 0;
+global.combo_timer          = 0;
+
+// NOW calculate the actual scaling based on display
+var disp_w = display_get_width();
+var disp_h = display_get_height();
+
+// Calculate perfect letterbox/pillarbox scaling
+var aspect = DESIGN_W / DESIGN_H;
+global.scale = (disp_w / disp_h > aspect) ? (disp_h / DESIGN_H) : (disp_w / DESIGN_W);
+
+// Use a percentage of available space to ensure window chrome fits
+global.scale = global.scale * 0.85; // Use 85% of calculated scale for safety
+
+// Update the actual view dimensions
+global.view_w  = round(DESIGN_W  * global.scale);
+global.view_h  = round(DESIGN_H  * global.scale);
+global.offset_x = (disp_w - global.view_w)  div 2;
+global.offset_y = (disp_h - global.view_h)  div 2;
+
+// ——— VIEW & WINDOW SETUP ———
+view_enabled    = true;
+view_visible[0] = true;
+
+// Viewport fills the window exactly
+view_xport[0] = 0;
+view_yport[0] = 0;
+view_wport[0] = global.view_w;
+view_hport[0] = global.view_h;
+
+// Camera stays locked to design resolution (768×1024)
+camera_set_view_size(view_camera[0], DESIGN_W, DESIGN_H);
+camera_set_view_pos(view_camera[0], 0, 0);
+
+// GUI layer matches design resolution
+display_set_gui_size(DESIGN_W, DESIGN_H);
+
+// Resize application surface to match viewport
+surface_resize(application_surface, global.view_w, global.view_h);
+
+// Set window size and center it
+window_set_size(global.view_w, global.view_h);
+
+// Center the window properly
+var window_x = (disp_w - global.view_w) div 2;
+var window_y = (disp_h - global.view_h) div 2;
+window_set_position(window_x, window_y);
+
+// Lock window size (prevents user from breaking scaling)
+window_set_min_width(global.view_w);
+window_set_max_width(global.view_w);
+window_set_min_height(global.view_h);
+window_set_max_height(global.view_h);
+
+//show_debug_message("=== VIEWPORT SETUP COMPLETE ===");
+//show_debug_message("Display: " + string(disp_w) + "x" + string(disp_h));
+//show_debug_message("Design: " + string(DESIGN_W) + "x" + string(DESIGN_H));
+//show_debug_message("Scale: " + string(global.scale));
+//show_debug_message("Window: " + string(global.view_w) + "x" + string(global.view_h));
+//show_debug_message("Position: " + string(window_x) + ", " + string(window_y));
+
+global.MAXSOLDIERS = 49;
+
+
+
+================================================================================
+
+/// @file objects/oEnemy/Create_0.gml
+
+/// oEnemy - Create Event
+
+lane = 0;
+is_boss = false;
+is_mini_boss = false;
+size = 40;
+hp = 2;
+max_hp = 2;
+flash = 0;
+move_timer = 0;
+
+// Set sprite based on enemy type
+if (is_boss) {
+    sprite_index = spr_boss;
+} else if (is_mini_boss) {
+    sprite_index = spr_enemy_mini;
+} else {
+    sprite_index = spr_enemy;
+}
+
+================================================================================
+
+/// @file objects/oEnemy/Draw_0.gml
+
+// oEnemy - Draw Event (NO ternary errors)
+var draw_color;
+
+if (flash > 0) {
+    draw_color = c_white;
+} 
+else if (is_boss) {
+    draw_color = BOSS_COLOR;
+}
+else if (is_mini_boss) {
+    draw_color = make_color_rgb(180, 50, 50);
+}
+else {
+    draw_color = ENEMY_COLOR;
+}
+
+draw_rectangle_color(x, y, x + size, y + size, draw_color, draw_color, draw_color, draw_color, false);
+
+if (is_boss || is_mini_boss) {
+    draw_rectangle_color(x, y, x + size, y + size, c_yellow, c_yellow, c_yellow, c_yellow, true);
+}
+
+// HP Bar
+if (hp < max_hp) {
+    var bar_width = size;
+    var bar_height = (is_boss || is_mini_boss) ? 6 : 4;
+    var hp_ratio = hp / max_hp;
+    
+    // Background
+    draw_rectangle_color(x, y - 10, x + bar_width, y - 10 + bar_height, c_dkgray, c_dkgray, c_dkgray, c_dkgray, false);
+    
+    // Foreground
+    var bar_color = (is_boss || is_mini_boss) ? c_yellow : c_lime;
+    draw_rectangle_color(x, y - 10, x + bar_width * hp_ratio, y - 10 + bar_height, 
+        bar_color, bar_color, bar_color, bar_color, false);
+}
+
+================================================================================
+
+/// @file objects/oEnemy/Step_0.gml
+
+/// oEnemy - Step Event
+
+// Move downward
+y += SCROLL_SPEED;
+
+// Boss/Mini-boss sine wave movement
+if (is_boss || is_mini_boss) {
+    move_timer += 0.05;
+    var bounds = lane_bounds(lane);
+    var center_x  = (bounds[0] + bounds[1]) / 2;
+    var amplitude = (bounds[1] - bounds[0]) / 2 - size;
+    x = center_x  + sin(move_timer) * amplitude - size/2;
+}
+
+// Flash timer
+if (flash > 0) flash--;
+
+// Check collision with soldiers
+var soldier = instance_place(x, y, oSoldier);
+if (soldier != noone) {
+    if (soldier.shield) {
+        // Shield absorbs hit
+        soldier.shield = false;
+        soldier.shield_timer = 0;
+        spawn_particles(soldier.x + 12, soldier.y + 12, c_aqua, 15);
+        
+        // Destroy enemy unless it's a boss/mini-boss
+        if (!is_boss && !is_mini_boss) {
+            spawn_particles(x + size/2, y + size/2, ENEMY_COLOR, 20);
+            instance_destroy();
+        }
+    } else {
+        // No shield - soldier dies
+        spawn_particles(soldier.x + 12, soldier.y + 12, SOLDIER_COLOR, 20);
+        instance_destroy(soldier);
+        global.combo = 0;
+        
+        // Regular enemies also die on impact
+        if (!is_boss && !is_mini_boss) {
+            spawn_particles(x + size/2, y + size/2, ENEMY_COLOR, 15);
+            instance_destroy();
+        }
+    }
+}
+
+// Destroy if off screen
+if (y > DESIGN_H + 100) {
+    instance_destroy();
+}
+
+================================================================================
+
+/// @file objects/oGame/Create_0.gml
+
+/// oGame - Create Event
+
+// Game state
+score = 0;
+high_score = 0;
+game_over = false;
+block_spawn_counter = 0;
+
+// Start with 1 soldier (not 5)
+instance_create_layer(0, 0, "Instances", oSoldier);
+
+// Level manager
+instance_create_layer(0, 0, "Instances", oLevelManager);
+
+================================================================================
+
+/// @file objects/oGame/Draw_0.gml
+
+/// oGame Draw Event (for in-game visual elements)
+// Safety check: make sure oConfig has initialized
+if (!variable_global_exists("view_w") || !variable_global_exists("view_h")) {
+    exit;
+}
+
+
+// DRAW LANE DIVIDER LINES (clearer visualization)
+// Draw two vertical RED lines to separate the 3 lanes
+var lane_width = DESIGN_W / 3;
+
+// Line between left lane and center lane (at x=256)
+draw_line_width_colour(lane_width, 0, lane_width, DESIGN_H, 3, c_red, c_red);
+
+// Line between center lane and right lane (at x=512)
+draw_line_width_colour(lane_width * 2, 0, lane_width * 2, DESIGN_H, 3, c_red, c_red);
+
+// OPTIONAL: Draw semi-transparent background for good lane (center)
+var gl = lane_bounds(good_lane());
+draw_set_alpha(0.15);
+draw_rectangle_colour(gl[0], 0, gl[1], DESIGN_H, c_green, c_green, c_green, c_green, false);
+draw_set_alpha(1.0);
+
+// Danger line
+var game_over_y = DESIGN_H - 130;
+draw_line_width_colour(0, game_over_y, DESIGN_W, game_over_y, 3, c_red, c_red);
+draw_text_colour(DESIGN_W/2-60, game_over_y-25, "DANGER LINE", c_red, c_red, c_red, c_red, 1);
+
+
+
+================================================================================
+
+/// @file objects/oGame/Draw_64.gml
+
+/// oGame Draw GUI event (HUD ONLY - doesn't cover game objects)
+
+// Safety check: make sure oConfig has initialized
+/// oGame - Draw GUI Event
+/// Display game stats and active power-ups
+
+// Set font
+draw_set_font(-1);
+draw_set_halign(fa_left);
+draw_set_valign(fa_top);
+
+// Stats box background at top
+var box_height = 120;
+draw_set_alpha(0.7);
+draw_rectangle_color(0, 0, DESIGN_W, box_height, c_black, c_black, c_black, c_black, false);
+draw_set_alpha(1);
+draw_rectangle_color(0, 0, DESIGN_W, box_height, c_white, c_white, c_white, c_white, true);
+
+// Top row: Score, Level, Army (centered in thirds)
+var third = DESIGN_W / 3;
+
+// Score (left third)
+draw_set_halign(fa_center);
+draw_text_color(third * 0.5, 20, "SCORE", c_yellow, c_yellow, c_yellow, c_yellow, 1);
+draw_text_color(third * 0.5, 50, string(score), c_white, c_white, c_white, c_white, 1);
+
+// Level (middle third)
+draw_text_color(third * 1.5, 20, "LEVEL", c_aqua, c_aqua, c_aqua, c_aqua, 1);
+draw_text_color(third * 1.5, 50, string(oLevelManager.level), c_white, c_white, c_white, c_white, 1);
+
+// Army (right third)
+draw_text_color(third * 2.5, 20, "ARMY", c_lime, c_lime, c_lime, c_lime, 1);
+draw_text_color(third * 2.5, 50, string(instance_number(oSoldier)) + " / " + string(global.MAXSOLDIERS), c_white, c_white, c_white, c_white, 1);
+
+// Power-up bars (aligned with lanes)
+var bar_y = 85;
+var bar_height = 25;
+var lane_width = DESIGN_W / 3;
+
+// Lane 0 (Left) - Shield power-up
+if (global.rapid_fire_active) {
+    var progress = global.rapid_fire_timer / 360;
+    draw_rectangle_color(0, bar_y, lane_width * progress, bar_y + bar_height, 
+        c_yellow, c_yellow, c_orange, c_orange, false);
+    draw_set_halign(fa_center);
+    draw_set_color(c_black);
+    draw_text(lane_width * 0.5, bar_y + 5, "RAPID FIRE");
+}
+
+// Lane 1 (Center) - Double Damage power-up
+if (instance_exists(oSoldier) && oSoldier.shield) {
+    // Check if ANY soldier has shield
+    var has_shield = false;
+    with (oSoldier) {
+        if (shield) {
+            has_shield = true;
+            var progress = shield_timer / 360;
+            draw_rectangle_color(lane_width, bar_y, lane_width + (lane_width * progress), bar_y + bar_height,
+                c_aqua, c_aqua, c_blue, c_blue, false);
+            break;
+        }
+    }
+    if (has_shield) {
+        draw_set_halign(fa_center);
+        draw_set_color(c_white);
+        draw_text(lane_width * 1.5, bar_y + 5, "SHIELD");
+    }
+}
+
+// Lane 2 (Right) - Rapid Fire power-up
+if (global.double_damage_active) {
+    var progress = global.double_damage_timer / 360;
+    draw_rectangle_color(lane_width * 2, bar_y, lane_width * 2 + (lane_width * progress), bar_y + bar_height,
+        make_color_rgb(255,100,255), make_color_rgb(255,100,255), 
+        make_color_rgb(200,0,200), make_color_rgb(200,0,200), false);
+    draw_set_halign(fa_center);
+    draw_set_color(c_white);
+    draw_text(lane_width * 2.5, bar_y + 5, "DOUBLE DAMAGE");
+}
+
+// Reset draw settings
+draw_set_color(c_white);
+draw_set_halign(fa_left);
+
+
+/*if (!variable_global_exists("view_w") || !variable_global_exists("view_h")) {
+    exit;
+}
+
+draw_set_font(-1);
+draw_text_colour(30, 30, "SCORE: " + string(score), c_yellow, c_yellow, c_yellow, c_yellow, 1);
+draw_text_colour(30, 100, "LEVEL: " + string(oLevelManager.level), c_aqua, c_aqua, c_aqua, c_aqua, 1);
+draw_text_colour(30, 160, "ARMY: " + string(instance_number(oSoldier)), c_lime, c_lime, c_lime, c_lime, 1);
+
+// ── DEBUG: Pulsing border to verify visible play area ──
+var pulse = 5 + 5 * sin(current_time * 0.005);
+var col = make_color_hsv(current_time * 0.1 mod 255, 255, 255);
+
+var border = pulse;
+draw_rectangle_colour(
+    border,
+    border,
+    DESIGN_W - border - 1,
+    DESIGN_H - border - 1,
+    col, col, col, col,
+    true
+);
+
+// Optional: actual camera bounds in white
+draw_rectangle_colour(0, 0, DESIGN_W-1, DESIGN_H-1, c_white, c_white, c_white, c_white, true);
+
+// DEBUG INFO (you can remove these later)
+//draw_text_colour(30, 220, "Lane 0: " + string(lane_bounds(0)[0]) + " to " + string(lane_bounds(0)[1]), c_white, c_white, c_white, c_white, 1);
+//draw_text_colour(30, 250, "Lane 1: " + string(lane_bounds(1)[0]) + " to " + string(lane_bounds(1)[1]), c_white, c_white, c_white, c_white, 1);
+//draw_text_colour(30, 280, "Lane 2: " + string(lane_bounds(2)[0]) + " to " + string(lane_bounds(2)[1]), c_white, c_white, c_white, c_white, 1);
+//draw_text_colour(30, 310, "WIDTH: " + string(DESIGN_W), c_white, c_white, c_white, c_white, 1);
+*/
+
+================================================================================
+
+/// @file objects/oGame/Step_0.gml
+
+// oGame — Step Event (COLLISION MOVED TO BULLET)
+
+// Safety check: make sure oConfig has initialized
+if (!variable_global_exists("view_w") || !variable_global_exists("view_h")) {
+    exit;
+}
+
+//if (game_over) exit;
+
+// 1. POWER-UP TIMERS
+if (global.rapid_fire_timer > 0) {
+    global.rapid_fire_timer--;
+    if (global.rapid_fire_timer <= 0) global.rapid_fire_active = false;
+}
+if (global.double_damage_timer > 0) {
+    global.double_damage_timer--;
+    if (global.double_damage_timer <= 0) global.double_damage_active = false;
+}
+if (global.combo_timer > 0) {
+    global.combo_timer--;
+    if (global.combo_timer <= 0) global.combo = 0;
+}
+
+// 2. SPAWN NORMAL Instances (WITH COLLISION CHECKING)
+var spawn_count = should_spawn_Instances();
+repeat (spawn_count) {
+    var lanes = enemy_lanes();
+    var lane = lanes[irandom(array_length(lanes)-1)];
+    var sz = irandom_range(35, 50);
+    
+    var pos = find_clear_spawn_position(lane, sz, oEnemy, 15);
+    
+    if (pos != noone) {
+        with (instance_create_layer(pos[0], pos[1], "Instances", oEnemy)) {
+            lane         = lane;
+            is_boss      = false;
+            is_mini_boss = false;
+            size         = sz;
+            hp           = max(1, sz div 20);
+            max_hp       = hp;
+            flash        = 0;
+            move_timer   = 0;
+        }
+    }
+}
+
+// 3. Instances & POWER-UPS (WITH COLLISION CHECKING)
+block_spawn_counter++;
+if (block_spawn_counter >= BLOCK_SPAWN_RATE) {
+		    block_spawn_counter = 0;
+    
+		    var pos = find_clear_spawn_position(good_lane(), BLOCK_SIZE, oNumberBlock, 15);
+    
+		    if (pos != noone) {
+		        var val = (random(1) < 0.7) ? -irandom_range(3,8) : irandom_range(1,4);
+        
+		        with (instance_create_layer(pos[0], pos[1], "Instances", oNumberBlock)) {
+		            value = val;
+		            original_value = val;
+		            pulse = 0;
+		        }
+        
+		if (random(1) < 0.25) {
+		    var powerup_pos = find_clear_spawn_position(good_lane(), 40, oPowerUp, 10);
+    
+		    if (powerup_pos != noone) {
+		        var pt = irandom(2);
+		        with (instance_create_layer(powerup_pos[0], powerup_pos[1], "Instances", oPowerUp)) {
+		            type = pt;
+		            pulse = 0;
+            
+		            // Set sprite based on type
+		            switch (type) {
+		                case 0: sprite_index = spr_powerup_rapid; break;
+		                case 1: sprite_index = spr_powerup_shield; break;
+		                case 2: sprite_index = spr_powerup_double; break;
+		            }
+		        }
+		    }
+		}
+    
+	}
+}
+
+// 4. WAVE PROGRESSION
+var wave_event = check_wave_complete(instance_number(oEnemy));
+
+if (wave_event == "mini_boss") {
+    var lane = choose(0, 2);
+    var sz = 80 + oLevelManager.level * 5;
+    var pos = find_clear_spawn_position(lane, sz, oEnemy, 20);
+    
+    if (pos != noone) {
+        with (instance_create_layer(pos[0], pos[1], "Instances", oEnemy)) {
+            lane         = lane;
+            is_boss      = false;
+            is_mini_boss = true;
+            size         = sz;
+            hp           = sz;
+            max_hp       = sz;
+            flash        = 0;
+            move_timer   = 0;
+        }
+    }
+}
+else if (wave_event == "boss") {
+    var lane = choose(0, 2);
+    var sz = 100 + oLevelManager.level * 10;
+    var pos = find_clear_spawn_position(lane, sz, oEnemy, 20);
+    
+    if (pos != noone) {
+        with (instance_create_layer(pos[0], pos[1], "Instances", oEnemy)) {
+            lane         = lane;
+            is_boss      = true;
+            is_mini_boss = false;
+            size         = sz;
+            hp           = sz * 2;
+            max_hp       = hp;
+            flash        = 0;
+            move_timer   = 0;
+        }
+    }
+}
+
+// 5. BULLET COLLISIONS NOW HANDLED IN oBullet STEP EVENT
+// (removed from here to avoid duplicate collision checks)
+
+// 6. ENEMY → SOLDIER (NOW HANDLED IN oEnemy STEP EVENT)
+var game_over_line = DESIGN_H - 130;
+
+with (oEnemy) {
+    if (y > game_over_line) {
+        oGame.game_over = true;
+    }
+}
+
+// 7. NUMBER BLOCK → SOLDIER 
+
+
+
+
+// 8. POWER-UP COLLECTION
+
+
+// 9. GAME OVER
+if (instance_number(oSoldier) == 0) {
+    game_over = true;
+    high_score = max(high_score, score);
+}
+
+
+// 9. GAME OVER
+if (instance_number(oSoldier) == 0 && !game_over) {
+    game_over = true;
+    high_score = max(high_score, score);
+    
+    // Show game over message
+    show_message("GAME OVER! Final Score: " + string(score));
+    
+    // Optional: restart after a delay or show game over screen
+    // alarm[0] = 180; // Restart after 3 seconds
+}
+
+================================================================================
+
+/// @file objects/oLevelManager/Create_0.gml
+
+level = 1;
+state = 1; // SPAWNING_WAVES
+wave_count = 0;
+max_waves = 5 + level * 2;
+Instances_per_wave = 8 + level * 3;
+Instances_spawned_this_wave = 0;
+spawn_timer = 0;
+mini_boss_spawned = false;
+boss_spawned = false;
+level_complete_timer = 0;
+
+================================================================================
+
+/// @file objects/oNumberBlock/Create_0.gml
+
+value = 0;
+original_value = 0;
+pulse = 0
+
+astring = "None";
+
+================================================================================
+
+/// @file objects/oNumberBlock/Draw_0.gml
+
+/// oNumberBlock Draw Event
+
+// 1) Draw the block sprite, tinted green
+
+var bonus_color;
+if (value < 0) { bonus_color =  c_orange;}
+else {bonus_color = c_green;}
+
+image_blend = bonus_color;
+draw_self();                   // draws the sprite assigned to this object
+
+
+
+// 2) Color choice for later effects (if you need it)
+var col = value > 0 ? POS_BLOCK_COLOR : (value < 0 ? NEG_BLOCK_COLOR : CONVERTING_COLOR);
+var ps  = 3 * sin(pulse);
+
+// 3) Text in the middle
+draw_set_halign(fa_center);
+draw_set_valign(fa_middle);
+draw_text_transformed_color(
+    x + BLOCK_SIZE * 0.5,
+    y + BLOCK_SIZE * 0.5,
+    string(value),
+    1, 1, 0,
+    c_white, c_white, c_white, c_white,
+    1
+);
+
+
+if (value < 0) {
+    var prog = 1 - abs(value) / abs(original_value);
+    var bw = BLOCK_SIZE - 10;
+    var bx = x + 5, by = y + BLOCK_SIZE + 5;
+    //draw_rectangle_color(bx, by, bx + bw, by + 4, c_dkgray, c_dkgray, c_dkgray, c_dkgray, false);
+    //draw_rectangle_color(bx, by, bx + bw * prog, by + 4, c_yellow, c_yellow, c_yellow, c_yellow, false);
+}
+
+draw_text(x-20,y-20,id);
+draw_text(x-20,y-40,astring);
+
+
+
+
+================================================================================
+
+/// @file objects/oNumberBlock/Step_0.gml
+
+/// oNumberBlock - Step Event
+
+// Move downward
+y += BLOCK_SPEED;
+
+// Pulse animation
+pulse += 0.1;
+
+// Check collision with soldiers
+if (place_meeting(x, y, oSoldier)) {
+    show_debug_message("BLOCK COLLECTED! Value: " + string(value));
+    
+    // Handle positive blocks
+    if (value > 0) {
+        var current_soldiers = instance_number(oSoldier);
+        var soldiers_to_add = min(value, global.MAXSOLDIERS - current_soldiers);
+        
+        if (soldiers_to_add > 0) {
+            repeat (soldiers_to_add) {
+                instance_create_layer(0, 0, "Instances", oSoldier);
+            }
+            score += soldiers_to_add * 10;
+        }
+        spawn_particles(x + BLOCK_SIZE/2, y + BLOCK_SIZE/2, POS_BLOCK_COLOR, 20);
+    }
+    // Handle negative blocks
+    else if (value < 0) {
+        var lose = abs(value);
+        repeat (lose) {
+            var s = instance_find(oSoldier, 0);
+            if (s != noone) instance_destroy(s);
+        }
+        oGame.score = max(0, score - 10);
+        spawn_particles(x + BLOCK_SIZE/2, y + BLOCK_SIZE/2, NEG_BLOCK_COLOR, 25);
+    }
+    
+    // Destroy the block
+    instance_destroy();
+}
+
+// Destroy if off screen
+if (y > DESIGN_H + 100) {
+    instance_destroy();
+}
+
+================================================================================
+
+/// @file objects/oParticle/Create_0.gml
+
+// oParticle - Create
+x = 0; y = 0; color = c_white;
+vx = 0; vy = 0; lifetime = 30; max_lifetime = 30;
+size = 4;
+
+================================================================================
+
+/// @file objects/oParticle/Draw_0.gml
+
+var a = 255 * (lifetime / max_lifetime);
+var sz = size * (lifetime / max_lifetime);
+if (sz > 0) {
+    draw_set_alpha(a / 255);
+    draw_circle_color(x, y, sz, color, color, false);
+    draw_set_alpha(1);
+}
+
+================================================================================
+
+/// @file objects/oParticle/Step_0.gml
+
+x += vx;
+y += vy;
+vy += 0.3;
+lifetime--;
+if (lifetime <= 0) instance_destroy();
+
+================================================================================
+
+/// @file objects/oPlayerFormation/Create_0.gml
+
+/// oPlayerFormation - Create Event
+/// Controls the player's soldier formation
+
+// Position at bottom center of screen
+x = DESIGN_W / 2;
+y = DESIGN_H - 200;  // Near bottom but above danger line
+
+// Movement
+move_speed = MOVEMENT_SPEED;
+
+================================================================================
+
+/// @file objects/oPlayerFormation/Draw_0.gml
+
+/// oPlayerFormation - Draw Event
+/// Only draw indicator if you have multiple soldiers
+
+// Only show the formation center indicator if you have 2+ soldiers
+if (instance_number(oSoldier) > 1) {
+    draw_set_alpha(0.3);
+    draw_circle_color(x, y, 6, c_yellow, c_yellow, false);
+    draw_set_alpha(1.0);
+    draw_circle_color(x, y, 6, c_yellow, c_yellow, true);
+}
+
+================================================================================
+
+/// @file objects/oPlayerFormation/Step_0.gml
+
+/// oPlayerFormation - Step Event
+/// Handle player movement - DYNAMIC FORMATION BOUNDS (7 per row)
+
+// Safety check - make sure oConfig has initialized
+if (!variable_global_exists("view_w") || !variable_global_exists("view_h")) {
+    exit;
+}
+
+// Movement controls
+var move_x = 0;
+
+if (keyboard_check(vk_left) || keyboard_check(ord("A"))) {
+    move_x = -12;  // MOVEMENT_SPEED
+}
+if (keyboard_check(vk_right) || keyboard_check(ord("D"))) {
+    move_x = 12;
+}
+
+// Move the formation center
+x += move_x;
+
+// Position all soldiers in formation around this point FIRST
+var soldier_count = instance_number(oSoldier);
+if (soldier_count > 0) {
+    var soldiers = [];
+    
+    // Collect all soldiers into array
+    with (oSoldier) {
+        array_push(soldiers, id);
+    }
+    
+    // Formation parameters
+    var soldiers_per_row = 7;  // CHANGED FROM 5 TO 7
+    var spacing = 26;          // FORMATION_SPACING
+    var soldier_size = 24;     // BASE_SOLDIER_SIZE
+    var row = 0;
+    var col = 0;
+    
+    // Calculate formation bounds BEFORE positioning
+    var total_rows = ceil(soldier_count / soldiers_per_row);
+    var soldiers_in_last_row = soldier_count % soldiers_per_row;
+    if (soldiers_in_last_row == 0) soldiers_in_last_row = soldiers_per_row;
+    
+    // For a single soldier, it should be centered at formation center
+    // For multiple soldiers, they spread out from center
+    
+    // Track the leftmost and rightmost soldier positions we'll create
+    var leftmost_offset = 0;
+    var rightmost_offset = 0;
+    
+    // Calculate the width of the formation
+    if (soldier_count == 1) {
+        leftmost_offset = 0;
+        rightmost_offset = soldier_size;
+    } else {
+        // Formation spans from leftmost to rightmost soldier
+        var soldiers_in_first_row = min(soldier_count, soldiers_per_row);
+        leftmost_offset = -(soldiers_in_first_row - 1) / 2 * spacing - soldier_size/2;
+        rightmost_offset = (soldiers_in_first_row - 1) / 2 * spacing + soldier_size/2;
+    }
+    
+    // Clamp formation center so soldiers stay on screen
+    var min_x = -leftmost_offset;
+    var max_x = DESIGN_W - rightmost_offset;
+    x = clamp(x, min_x, max_x);
+    
+    // Now position soldiers with the clamped x position
+    row = 0;
+    col = 0;
+    
+    for (var i = 0; i < soldier_count; i++) {
+        var soldier = soldiers[i];
+        
+        if (soldier_count == 1) {
+            // Single soldier: center at formation position
+            soldier.x = x - soldier_size/2;
+            soldier.y = y;
+        } else {
+            // Multiple soldiers: arrange in formation
+            var offset_x = (col - (soldiers_per_row - 1) / 2) * spacing;
+            var offset_y = row * spacing;
+            
+            soldier.x = x + offset_x - soldier_size/2;
+            soldier.y = y + offset_y;
+        }
+        
+        // Move to next position
+        col++;
+        if (col >= soldiers_per_row) {
+            col = 0;
+            row++;
+        }
+    }
+}
+
+================================================================================
+
+/// @file objects/oPowerUp/Create_0.gml
+
+/// oPowerUp - Create Event
+
+type = 0;  // 0=rapid, 1=shield, 2=double
+pulse = 0;
+
+/// oPowerUp - Create Event
+
+type = 0;
+pulse = 0;
+
+// Set sprite based on type
+switch (type) {
+    case 0:
+        sprite_index = spr_powerup_rapid;
+        break;
+    case 1:
+        sprite_index = spr_powerup_shield;
+        break;
+    case 2:
+        sprite_index = spr_powerup_double;
+        break;
+}
+
+================================================================================
+
+/// @file objects/oPowerUp/Draw_0.gml
+
+var cols = [c_yellow, c_aqua, make_color_rgb(255,100,255)];
+var col = cols[type];
+var ps = 5 * sin(pulse);
+//draw_rectangle_color(x-ps, y-ps, x+40+ps, y+40+ps, col, col, col, col, true);
+//draw_rectangle_color(x+10, y+10, x+30, y+30, col, col, col, col, false);
+draw_self();
+
+================================================================================
+
+/// @file objects/oPowerUp/Step_0.gml
+
+/// oPowerUp - Step Event
+
+// Move downward
+y += BLOCK_SPEED;
+
+// Pulse animation
+pulse += 0.1;
+
+// Check collision with soldiers
+if (place_meeting(x, y, oSoldier)) {
+    switch (type) {
+        case 0:
+            global.rapid_fire_active = true;
+            global.rapid_fire_timer = 360;
+            break;
+        case 1:
+            with (oSoldier) { shield = true; shield_timer = 360; }
+            break;
+        case 2:
+            global.double_damage_active = true;
+            global.double_damage_timer = 360;
+            break;
+    }
+    var cols = [c_yellow, c_aqua, make_color_rgb(255,100,255)];
+    spawn_particles(x+20, y+20, cols[type], 18);
+    instance_destroy();
+}
+
+// Destroy if off screen
+if (y > DESIGN_H + 100) {
+    instance_destroy();
+}
+
+================================================================================
+
+/// @file objects/oSoldier/Create_0.gml
+
+size = BASE_SOLDIER_SIZE;
+fire_timer = irandom(FIRE_RATE - 1);
+shield = false;
+shield_timer = 0;
+
+================================================================================
+
+/// @file objects/oSoldier/Draw_0.gml
+
+/// oSoldier - Draw Event
+/// Draw the soldier (rectangle for now, or sprite if assigned)
+
+// Check if this soldier has a sprite assigned
+if (sprite_index != -1) {
+    // Draw the sprite
+    draw_self();
+    
+    // Draw shield effect if active
+    if (shield) {
+        var a = 100 + 50 * sin(shield_timer * 0.2);
+        draw_set_alpha(a / 255);
+        draw_circle_color(x + sprite_width/2, y + sprite_height/2, sprite_width/2 + 5, c_aqua, c_aqua, true);
+        draw_set_alpha(1);
+    }
+} else {
+    // No sprite - draw blue rectangle
+    var col = make_color_rgb(0, 100, 255);
+    draw_rectangle_color(x, y, x + size, y + size, col, col, col, col, false);
+    draw_rectangle_color(x, y, x + size, y + size, make_color_rgb(100, 150, 255), c_white, c_white, c_white, true);
+    
+    // Draw shield effect if active
+    if (shield) {
+        var a = 100 + 50 * sin(shield_timer * 0.2);
+        draw_set_alpha(a / 255);
+        draw_circle_color(x + size/2, y + size/2, size/2 + 5, c_aqua, c_aqua, true);
+        draw_set_alpha(1);
+    }
+}
+
+================================================================================
+
+/// @file objects/oSoldier/Step_0.gml
+
+/// oSoldier - Step Event
+
+//var rate = global.rapid_fire_active ? max(4, 12 / 2) : 12;  // FIRE_RATE = 12
+
+var rate = global.rapid_fire_active ? max(4, 20 / 2) : 20;  // FIRE_RATE = 20
+
+fire_timer = (fire_timer + 1) % rate;
+
+if (shield) {
+    shield_timer--;
+    if (shield_timer <= 0) shield = false;
+}
+
+if (fire_timer == 0) {
+    // Center bullet on soldier
+    // Soldier is at (x, y) with size 24
+    // Bullet is 8 wide, so offset by (24-8)/2 = 8 to center horizontally
+    var bx = x + 12 - 4;  // Center of soldier (x + 12) minus half bullet width (4)
+    var by = y - 20;      // Spawn above soldier
+    
+	if (instance_number(oSoldier) < 40)
+			{
+		    with (instance_create_layer(bx, by, "Instances", oBullet)) {
+		        damage = global.double_damage_active ? 2 : 1;
+				}
+			}
+}
+
+================================================================================
+
+/// @file objects/oViewController/Create_0.gml
+
+/// oViewController - Create Event (FINAL FIX)
+/// The key: viewport PORT must match window size, camera VIEW shows logical size
+/*
+// Define your target game resolution (logical resolution)
+global.game_width = 800;
+global.game_height = 1200;
+
+// Get the actual display dimensions
+var display_width = display_get_width();
+var display_height = display_get_height();
+
+// Calculate safe area
+var safe_width = display_width * 0.85;
+var safe_height = display_height * 0.85;
+
+// Calculate scaling factor
+var scale_x = safe_width / global.game_width;
+var scale_y = safe_height / global.game_height;
+global.scale = min(scale_x, scale_y);
+global.scale = min(global.scale, 1.0);
+
+// Calculate window dimensions
+var window_width = floor(global.game_width * global.scale);
+var window_height = floor(global.game_height * global.scale);
+
+// Set window size
+window_set_size(window_width, window_height);
+
+// Center window
+var x_pos = floor((display_width - window_width) / 2);
+var y_pos = floor((display_height - window_height) / 2);
+window_set_position(x_pos, y_pos);
+
+// Enable views
+view_enabled = true;
+view_visible[0] = true;
+
+// The CAMERA views the logical game area (what to show)
+camera_set_view_size(view_camera[0], global.game_width, global.game_height);
+camera_set_view_pos(view_camera[0], 0, 0);
+
+// The VIEWPORT PORT is where to draw it (physical window pixels)
+// This MUST match the window size EXACTLY
+view_wport[0] = window_width;
+view_hport[0] = window_height;
+
+// Position in the window (0,0 = top left)
+view_xport[0] = 0;
+view_yport[0] = 0;
+
+// CRITICAL: Don't resize application surface!
+// Let GameMaker handle it automatically based on viewport settings
+// surface_resize(application_surface, global.game_width, global.game_height);
+
+// GUI at logical resolution
+display_set_gui_size(global.game_width, global.game_height);
+
+show_debug_message("=== VIEWPORT CONFIGURATION ===");
+show_debug_message("Window: " + string(window_width) + "x" + string(window_height));
+show_debug_message("Camera VIEW (what to show): " + string(global.game_width) + "x" + string(global.game_height));
+show_debug_message("Viewport PORT (where to draw): " + string(view_wport[0]) + "x" + string(view_hport[0]));
+show_debug_message("Scale: " + string(global.scale));
+
+*/
+
+================================================================================
+
+/// @file objects/oViewController/Step_0.gml
+
+/// oViewController - Step Event
+/// Handles dynamic window resizing (optional)
+
+// If you want to allow window resizing, uncomment this section
+/*
+if (window_get_width() != view_wport[0] || window_get_height() != view_hport[0]) {
+    var new_width = window_get_width();
+    var new_height = window_get_height();
+    
+    // Update viewport to match new window size
+    view_wport[0] = new_width;
+    view_hport[0] = new_height;
+    
+    // Camera still shows the full game resolution
+    // The viewport scaling handles fitting it to the window
+}
+*/
+/*
+// Keep application surface at consistent size
+if (surface_get_width(application_surface) != global.game_width || 
+    surface_get_height(application_surface) != global.game_height) {
+    surface_resize(application_surface, global.game_width, global.game_height);
+}
+
+*/
+
+================================================================================
+
+/// @file scripts/boss_defeated/boss_defeated.gml
+
+/// boss_defeated()
+function boss_defeated() {
+    with (oLevelManager) {
+        state = 3; // LEVEL_COMPLETE
+        level_complete_timer = 120;
+    }
+}
+
+================================================================================
+
+/// @file scripts/can_spawn_at/can_spawn_at.gml
+
+/// can_spawn_at(x, y, width, height, check_object) -> bool
+/// Returns true if the area is clear of the specified object type
+function can_spawn_at(_x, _y, _width, _height, _obj) {
+    // Check if there's already an object in this area
+    var collision = collision_rectangle(_x, _y, _x + _width, _y + _height, _obj, false, true);
+    return (collision == noone);
+}
+
+
+
+================================================================================
+
+/// @file scripts/check_wave_complete/check_wave_complete.gml
+
+/// check_wave_complete(Instances_alive) -> string ("", "mini_boss", "boss")
+function check_wave_complete(alive) {
+    with (oLevelManager) {
+        if (alive == 0 && Instances_spawned_this_wave >= Instances_per_wave) {
+            wave_count++;
+            Instances_spawned_this_wave = 0;
+            spawn_timer = 0;
+            
+            if (wave_count == max_waves / 2 && !mini_boss_spawned) {
+                mini_boss_spawned = true;
+                return "mini_boss";
+            }
+            if (wave_count >= max_waves) {
+                state = 2; // BOSS_FIGHT
+                return "boss";
+            }
+        }
+    }
+    return "";
+}
+
+================================================================================
+
+/// @file scripts/enemy_lanes/enemy_lanes.gml
+
+/// enemy_lanes() -> array
+function enemy_lanes() {
+    return [0, 2]; // LEFT, RIGHT
+}
+
+
+================================================================================
+
+/// @file scripts/find_clear_spawn_position/find_clear_spawn_position.gml
+
+/// find_clear_spawn_position(lane, size, object_to_check, max_attempts) -> array [x, y] or noone
+/// Tries to find a clear position to spawn in the given lane
+/// Returns [x, y] if found, or noone if no clear spot after max_attempts
+function find_clear_spawn_position(_lane, _size, _obj, _max_attempts = 10) {
+    var bounds = lane_bounds(_lane);
+    var spawn_y = -100; // Start well above screen
+    
+    repeat(_max_attempts) {
+        var spawn_x = irandom_range(bounds[0], bounds[1] - _size);
+        
+        // Check if this position is clear
+        if (can_spawn_at(spawn_x, spawn_y, _size, _size, _obj)) {
+            return [spawn_x, spawn_y];
+        }
+        
+        // Try a different y position
+        spawn_y -= 20;
+    }
+    
+    // No clear position found
+    return noone;
+}
+
+================================================================================
+
+/// @file scripts/good_lane/good_lane.gml
+
+
+/// good_lane() -> int
+function good_lane() {
+    return 1; // CENTER
+}
+
+================================================================================
+
+/// @file scripts/lane_bounds/lane_bounds.gml
+
+/// lane_bounds(lane) -> array [left, right]
+/// Returns the pixel boundaries for each lane in a 768-width room
+function lane_bounds(lane) {
+    var lane_width = DESIGN_W / 3; // Use DESIGN_W (768), not WIDTH (scaled)
+    
+    switch(lane) {
+        case 0: return [0, lane_width];                           // Left lane: 0-256
+        case 1: return [lane_width, lane_width * 2];              // Center lane: 256-512
+        case 2: return [lane_width * 2, DESIGN_W];                // Right lane: 512-768
+    }
+    return [0, 0];
+}
+
+================================================================================
+
+/// @file scripts/lane_center/lane_center.gml
+
+/// lane_center(lane) -> real
+/// Returns the x-coordinate of the center of each lane
+function lane_center(lane) {
+    var lane_width = DESIGN_W / 3; // Use DESIGN_W (768), not WIDTH (scaled)
+    
+    switch(lane) {
+        case 0: return lane_width / 2;           // Left lane center: 128
+        case 1: return DESIGN_W / 2;             // Center lane center: 384
+        case 2: return lane_width * 2.5;         // Right lane center: 640
+    }
+    return 0;
+}
+
+================================================================================
+
+/// @file scripts/should_spawn_enemies/should_spawn_enemies.gml
+
+/// should_spawn_Instances() -> int
+function should_spawn_Instances() {
+    if (oLevelManager.state != 1) return 0;
+    
+    oLevelManager.spawn_timer++;
+    var rate = max(MIN_ENEMY_SPAWN_RATE, BASE_ENEMY_SPAWN_RATE - oLevelManager.level * 2);
+    
+    if (oLevelManager.spawn_timer >= rate && oLevelManager.Instances_spawned_this_wave < oLevelManager.Instances_per_wave) {
+        oLevelManager.spawn_timer = 0;
+        oLevelManager.Instances_spawned_this_wave += Instances_PER_SPAWN;
+        return Instances_PER_SPAWN;
+    }
+    return 0;
+}
+
+================================================================================
+
+/// @file scripts/spawn_particles/spawn_particles.gml
+
+/// spawn_particles(x, y, color, count=10)
+function spawn_particles(_x, _y, _col, _count = 10) {
+    repeat(_count) {
+        var ang = random(360);
+        var spd = random_range(2, 6);
+        var vx = lengthdir_x(spd, ang);
+        var vy = lengthdir_y(spd, ang) - 3;
+        with (instance_create_layer(_x, _y, "Instances", oParticle)) {
+            x = _x; y = _y; color = _col;
+            vx = vx; vy = vy; lifetime = 30; max_lifetime = 30;
+            size = irandom_range(3, 6);
+        }
+    }
+}
+
+================================================================================

@@ -1,0 +1,47 @@
+# ==============================
+# OS junk
+# ==============================
+.DS_Store
+Thumbs.db
+ehthumbs.db
+[Dd]esktop.ini
+$RECYCLE.BIN/
+
+# ==============================
+# Logs / temp
+# ==============================
+*.log
+*.tmp
+*.bak
+*.swp
+*.stackdump
+
+# ==============================
+# Editor / IDE folders
+# ==============================
+.vscode/
+.idea/
+*.suo
+*.user
+*.userosscache
+*.sln.docstates
+
+# ==============================
+# GameMaker build output
+# ==============================
+Build/
+build/
+output/
+Output/
+dist/
+bin/
+
+# ==============================
+# GameMaker auto backups
+# ==============================
+*.autosave
+*.autobackup
+*.yyp.bak
+*.yy.bak
+*.yyp~
+*.yy~

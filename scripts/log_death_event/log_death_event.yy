@@ -1,0 +1,13 @@
+{
+  "$GMScript":"v1",
+  "%Name":"log_death_event",
+  "isCompatibility":false,
+  "isDnD":false,
+  "name":"log_death_event",
+  "parent":{
+    "name":"Scripts",
+    "path":"folders/Scripts.yy",
+  },
+  "resourceType":"GMScript",
+  "resourceVersion":"2.0",
+}

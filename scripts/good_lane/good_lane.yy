@@ -1,0 +1,13 @@
+{
+  "$GMScript":"v1",
+  "%Name":"good_lane",
+  "isCompatibility":false,
+  "isDnD":false,
+  "name":"good_lane",
+  "parent":{
+    "name":"Scripts",
+    "path":"folders/Scripts.yy",
+  },
+  "resourceType":"GMScript",
+  "resourceVersion":"2.0",
+}

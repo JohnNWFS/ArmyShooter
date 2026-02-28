@@ -1,0 +1,13 @@
+{
+  "$GMScript":"v1",
+  "%Name":"lane_center",
+  "isCompatibility":false,
+  "isDnD":false,
+  "name":"lane_center",
+  "parent":{
+    "name":"Scripts",
+    "path":"folders/Scripts.yy",
+  },
+  "resourceType":"GMScript",
+  "resourceVersion":"2.0",
+}
