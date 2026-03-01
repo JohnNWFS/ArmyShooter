@@ -568,13 +568,13 @@ if (oLevelManager.state == 1) {
         if (oLevelManager.boss_support_timer >= oLevelManager.boss_support_interval) {
             oLevelManager.boss_support_timer = 0;
 
-            var boss_lane = 0;
-            with (oEnemy) {
-                if (is_boss) {
-                    boss_lane = lane;
-                    break;
-                }
-            }
+			var boss_lane = 0;
+			with (oEnemy) {
+			    if (is_boss) {
+			        other.boss_lane = self.lane;
+			        break;
+			    }
+			}
 
             var escort_lane = (boss_lane == 0) ? 2 : 0;
             var escort_bounds = lane_bounds(escort_lane);
@@ -609,7 +609,7 @@ if (oLevelManager.state == 1) {
                             size = 20;
                             max_hp = 1;
                             hp = 1;
-                            lane = escort_lane;
+                            other.lane = escort_lane;
                             is_mini_boss = false;
                             is_boss = false;
                             is_swarm = true;

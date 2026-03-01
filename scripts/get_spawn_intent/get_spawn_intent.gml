@@ -9,12 +9,12 @@ function get_spawn_intent(_pattern) {
     var low_army = instance_number(oSoldier) < 12;
 
     for (var i = 0; i < array_length(lanes); i++) {
-        var ln = lanes[i];
-        var score = 100;
+        var _ln = lanes[i];
+        var iscore = 100;
 
         // Cooldown memory: avoid repeatedly stacking the exact same lane.
-        var cooldown = oLevelManager.lane_spawn_cooldown[ln];
-        score -= cooldown * 22;
+        var cooldown = oLevelManager.lane_spawn_cooldown[_ln];
+        iscore -= cooldown * 22;
 
         // Pressure equalizer: prefer lane with fewer active enemies / less progress.
         var lane_enemy_count = 0;
@@ -23,32 +23,32 @@ function get_spawn_intent(_pattern) {
 
         for (var e = 0; e < enemy_count; e++) {
             var inst = instance_find(oEnemy, e);
-            if (inst.lane == ln) {
+            if (inst.lane == _ln) {
                 lane_enemy_count++;
                 furthest_y = max(furthest_y, inst.y);
             }
         }
 
-        score -= lane_enemy_count * 10;
-        score -= max(0, furthest_y) / 40;
+        iscore -= lane_enemy_count * 10;
+        iscore -= max(0, furthest_y) / 40;
 
         // Keep swarms threatening by slightly preferring the opposite lane.
         if (_pattern.is_swarm) {
-            score += (ln != oLevelManager.last_spawn_lane) ? 15 : -8;
+            iscore += (_ln != oLevelManager.last_spawn_lane) ? 15 : -8;
         }
 
         // Recovery behavior: when army is low, avoid piling pressure on the lane
         // that already has the deepest enemy push.
         if (low_army && furthest_y > DESIGN_H * 0.55) {
-            score -= 18;
+            iscore -= 18;
         }
 
         // Small random jitter keeps selection from becoming deterministic.
-        score += irandom_range(-6, 6);
+        iscore += irandom_range(-6, 6);
 
-        if (score > best_score) {
-            best_score = score;
-            best_lane = ln;
+        if (iscore > best_score) {
+            best_score = iscore;
+            best_lane = _ln;
             reason = "cooldown_and_pressure";
         }
     }
@@ -56,6 +56,6 @@ function get_spawn_intent(_pattern) {
     return {
         lane: best_lane,
         reason: reason,
-        score: best_score
+        iscore: best_score
     };
 }
