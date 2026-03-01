@@ -115,7 +115,7 @@ if (oLevelManager.state == 1) { // SPAWNING_WAVES
 		                    size = 20;
 		                    max_hp = 1;
 		                    hp = 1;
-		                    lane = spawn_lane;
+		                    lane = other.lane;
 		                    is_mini_boss = false;
 		                    is_boss = false;
 		                    is_swarm = true;
@@ -140,7 +140,7 @@ if (oLevelManager.state == 1) { // SPAWNING_WAVES
 		                    size = 20;
 		                    max_hp = 1;
 		                    hp = 1;
-		                    lane = spawn_lane;
+		                    lane = other.lane;
 		                    is_mini_boss = false;
 		                    is_boss = false;
 		                    is_swarm = true;
@@ -172,7 +172,7 @@ if (oLevelManager.state == 1) { // SPAWNING_WAVES
 		                        size = 20;
 		                        max_hp = 1;
 		                        hp = 1;
-		                        lane = lane2;
+		                        lane = other.lane2;
 		                        is_mini_boss = false;
 		                        is_boss = false;
 		                        is_swarm = true;
@@ -191,7 +191,7 @@ if (oLevelManager.state == 1) { // SPAWNING_WAVES
 		                        size = 20;
 		                        max_hp = 1;
 		                        hp = 1;
-		                        lane = lane2;
+		                        lane = other.lane2;
 		                        is_mini_boss = false;
 		                        is_boss = false;
 		                        is_swarm = true;
@@ -218,7 +218,7 @@ if (oLevelManager.state == 1) { // SPAWNING_WAVES
                         max_hp = sz / 10;
                         if (max_hp < 2) max_hp = 2;
                         hp = max_hp;
-                        lane = spawn_lane;
+                        lane = other.lane;
 
                         is_mini_boss = pattern.is_mini_boss;
                         is_boss = pattern.is_boss;
@@ -570,7 +570,6 @@ if (oLevelManager.state == 1) {
 
             var ambient_intent = get_spawn_intent(current_pattern);
             var lane = ambient_intent.lane;
-            var ambient_lane = lane;
             var swarm_count = irandom_range(4, 6);
             var spacing = 12;
             var bounds = lane_bounds(lane);
@@ -585,7 +584,7 @@ if (oLevelManager.state == 1) {
                             size = 20;
                             max_hp = 1;
                             hp = 1;
-                            lane = ambient_lane;
+                            lane = other.lane;
                             is_mini_boss = false;
                             is_boss = false;
                             is_swarm = true;
@@ -603,7 +602,7 @@ if (oLevelManager.state == 1) {
                             size = 20;
                             max_hp = 1;
                             hp = 1;
-                            lane = ambient_lane;
+                            lane = other.lane;
                             is_mini_boss = false;
                             is_boss = false;
                             is_swarm = true;
@@ -646,7 +645,7 @@ if (oLevelManager.state == 1) {
                             size = 20;
                             max_hp = 1;
                             hp = 1;
-                            lane = escort_lane;
+                            lane = other.escort_lane;
                             is_mini_boss = false;
                             is_boss = false;
                             is_swarm = true;
@@ -664,7 +663,7 @@ if (oLevelManager.state == 1) {
                             size = 20;
                             max_hp = 1;
                             hp = 1;
-                            lane = escort_lane;
+                            lane = other.escort_lane;
                             is_mini_boss = false;
                             is_boss = false;
                             is_swarm = true;
