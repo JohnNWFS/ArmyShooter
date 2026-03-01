@@ -87,6 +87,7 @@ if (oLevelManager.state == 1) { // SPAWNING_WAVES
             // Determine enemy lane using director intent
             var spawn_intent = get_spawn_intent(pattern);
             var lane = spawn_intent.lane;
+            var spawn_lane = lane;
             oLevelManager.last_spawn_lane = lane;
             oLevelManager.lane_spawn_cooldown[lane] = 5;
 
