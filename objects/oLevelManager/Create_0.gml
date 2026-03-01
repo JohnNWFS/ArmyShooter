@@ -22,5 +22,5 @@ last_spawn_lane = 0;
 
 // Boss support controls
 boss_support_timer = 0;
-boss_support_interval = 135;
+boss_support_interval = 100;
 boss_phase = 0;
