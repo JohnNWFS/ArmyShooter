@@ -6,17 +6,18 @@ function get_spawn_intent(_pattern) {
     var best_score = -999999;
     var reason = "fallback";
 
-    var low_army = instance_number(oSoldier) < 12;
+    var army_count = instance_number(oSoldier);
+    var low_army = army_count < 10;
 
     for (var i = 0; i < array_length(lanes); i++) {
         var _ln = lanes[i];
         var iscore = 100;
 
-        // Cooldown memory: avoid repeatedly stacking the exact same lane.
+        // Keep lane variety, but allow tighter pressure chains than before.
         var cooldown = oLevelManager.lane_spawn_cooldown[_ln];
-        iscore -= cooldown * 22;
+        iscore -= cooldown * 10;
 
-        // Pressure equalizer: prefer lane with fewer active enemies / less progress.
+        // Lane pressure info.
         var lane_enemy_count = 0;
         var furthest_y = -9999;
         var enemy_count = instance_number(oEnemy);
@@ -29,27 +30,29 @@ function get_spawn_intent(_pattern) {
             }
         }
 
-        iscore -= lane_enemy_count * 10;
-        iscore -= max(0, furthest_y) / 40;
+        // Horde behavior: encourage stacking into active lanes so packs feel dense.
+        iscore += lane_enemy_count * 8;
 
-        // Keep swarms threatening by slightly preferring the opposite lane.
+        // Still avoid runaway impossible pushes when army is weak.
+        if (low_army && furthest_y > DESIGN_H * 0.62) {
+            iscore -= 28;
+        }
+
+        // Swarm waves should feel relentless and frequently alternate flank pressure.
         if (_pattern.is_swarm) {
-            iscore += (_ln != oLevelManager.last_spawn_lane) ? 15 : -8;
+            iscore += (_ln != oLevelManager.last_spawn_lane) ? 14 : 8;
         }
 
-        // Recovery behavior: when army is low, avoid piling pressure on the lane
-        // that already has the deepest enemy push.
-        if (low_army && furthest_y > DESIGN_H * 0.55) {
-            iscore -= 18;
-        }
+        // Encourage closing pressure as wave progresses.
+        iscore += max(0, furthest_y) / 70;
 
         // Small random jitter keeps selection from becoming deterministic.
-        iscore += irandom_range(-6, 6);
+        iscore += irandom_range(-5, 5);
 
         if (iscore > best_score) {
             best_score = iscore;
             best_lane = _ln;
-            reason = "cooldown_and_pressure";
+            reason = "horde_pressure";
         }
     }
 

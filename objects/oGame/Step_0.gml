@@ -93,8 +93,8 @@ if (oLevelManager.state == 1) { // SPAWNING_WAVES
 		// SWARM FORMATION SPAWNING
 		if (pattern.is_swarm && pattern.swarm_formation > 0) {
 		    // Spawn a group of swarm enemies in formation
-		    var swarm_count = irandom_range(4, 6);  // Random 4-6 enemies per group
-		    var spacing = 25; // Pixels between swarm enemies
+		    var swarm_count = irandom_range(6, 8);
+		    var spacing = 10;
 		    var bounds = lane_bounds(lane);
 
 		    // Calculate formation to fit within lane bounds
@@ -114,7 +114,7 @@ if (oLevelManager.state == 1) { // SPAWNING_WAVES
 		                    size = 20;
 		                    max_hp = 1;
 		                    hp = 1;
-		                    lane = lane;
+		                    lane = other.lane;
 		                    is_mini_boss = false;
 		                    is_boss = false;
 		                    is_swarm = true;
@@ -139,7 +139,7 @@ if (oLevelManager.state == 1) { // SPAWNING_WAVES
 		                    size = 20;
 		                    max_hp = 1;
 		                    hp = 1;
-		                    lane = lane;
+		                    lane = other.lane;
 		                    is_mini_boss = false;
 		                    is_boss = false;
 		                    is_swarm = true;
@@ -150,6 +150,59 @@ if (oLevelManager.state == 1) { // SPAWNING_WAVES
 		                }
 		            }
 		        }
+		    }
+
+
+		    // Horde pincer bursts: frequently hit both enemy lanes together.
+		    var pincer_trigger = random(1);
+		    var pincer_chance = (instance_number(oSoldier) < 10) ? 0.35 : 0.55;
+		    if (pincer_trigger < pincer_chance) {
+		        var lane2 = (lane == 0) ? 2 : 0;
+		        var bounds2 = lane_bounds(lane2);
+		        var swarm_count2 = max(4, swarm_count - 2);
+		        var spawned2 = 0;
+
+		        if (lane2 == 0) {
+		            var start_x2 = bounds2[0] + 5;
+		            for (var p = 0; p < swarm_count2; p++) {
+		                var spawn_x2 = start_x2 + p * (20 + spacing);
+		                if (spawn_x2 + 20 <= bounds2[1]) {
+		                    with (instance_create_layer(spawn_x2, spawn_y - 30, "Instances", oEnemy)) {
+		                        size = 20;
+		                        max_hp = 1;
+		                        hp = 1;
+		                        lane = other.lane2;
+		                        is_mini_boss = false;
+		                        is_boss = false;
+		                        is_swarm = true;
+		                        sprite_index = spr_enemy_swarm;
+		                        role = "flank";
+		                    }
+		                    spawned2++;
+		                }
+		            }
+		        } else {
+		            var start_x2r = bounds2[1] - 25;
+		            for (var q = 0; q < swarm_count2; q++) {
+		                var spawn_x2r = start_x2r - q * (20 + spacing);
+		                if (spawn_x2r >= bounds2[0]) {
+		                    with (instance_create_layer(spawn_x2r, spawn_y - 30, "Instances", oEnemy)) {
+		                        size = 20;
+		                        max_hp = 1;
+		                        hp = 1;
+		                        lane = other.lane2;
+		                        is_mini_boss = false;
+		                        is_boss = false;
+		                        is_swarm = true;
+		                        sprite_index = spr_enemy_swarm;
+		                        role = "flank";
+		                    }
+		                    spawned2++;
+		                }
+		            }
+		        }
+
+		        swarm_count += spawned2;
 		    }
 
 		    oLevelManager.enemies_spawned_this_wave += swarm_count;
@@ -164,7 +217,7 @@ if (oLevelManager.state == 1) { // SPAWNING_WAVES
                         max_hp = sz / 10;
                         if (max_hp < 2) max_hp = 2;
                         hp = max_hp;
-                        lane = lane;
+                        lane = other.lane;
 
                         is_mini_boss = pattern.is_mini_boss;
                         is_boss = pattern.is_boss;
@@ -511,13 +564,13 @@ if (oLevelManager.state == 1) {
 
     // Ambient swarm noise for non-swarm/non-boss waves.
     if (!current_pattern.is_swarm && !current_pattern.is_boss && !current_pattern.is_mini_boss) {
-        if (swarm_background_timer >= 180) {
+        if (swarm_background_timer >= 110) {
             swarm_background_timer = 0;
 
             var ambient_intent = get_spawn_intent(current_pattern);
             var lane = ambient_intent.lane;
-            var swarm_count = irandom_range(3, 4);
-            var spacing = 25;
+            var swarm_count = irandom_range(4, 6);
+            var spacing = 12;
             var bounds = lane_bounds(lane);
             var spawn_y = -100;
 
@@ -530,7 +583,7 @@ if (oLevelManager.state == 1) {
                             size = 20;
                             max_hp = 1;
                             hp = 1;
-                            lane = lane;
+                            lane = other.lane;
                             is_mini_boss = false;
                             is_boss = false;
                             is_swarm = true;
@@ -548,7 +601,7 @@ if (oLevelManager.state == 1) {
                             size = 20;
                             max_hp = 1;
                             hp = 1;
-                            lane = lane;
+                            lane = other.lane;
                             is_mini_boss = false;
                             is_boss = false;
                             is_swarm = true;
@@ -579,8 +632,8 @@ if (oLevelManager.state == 1) {
             var escort_lane = (boss_lane == 0) ? 2 : 0;
             var escort_bounds = lane_bounds(escort_lane);
             var escort_y = -100;
-            var escort_count = 4;
-            var escort_spacing = 25;
+            var escort_count = 6;
+            var escort_spacing = 12;
 
             if (escort_lane == 0) {
                 var escort_start = escort_bounds[0] + 5;
@@ -591,7 +644,7 @@ if (oLevelManager.state == 1) {
                             size = 20;
                             max_hp = 1;
                             hp = 1;
-                            lane = escort_lane;
+                            lane = other.escort_lane;
                             is_mini_boss = false;
                             is_boss = false;
                             is_swarm = true;
@@ -609,7 +662,7 @@ if (oLevelManager.state == 1) {
                             size = 20;
                             max_hp = 1;
                             hp = 1;
-                            other.lane = escort_lane;
+                            lane = other.escort_lane;
                             is_mini_boss = false;
                             is_boss = false;
                             is_swarm = true;
